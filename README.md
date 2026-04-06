@@ -40,3 +40,22 @@ npm run dev
 * Edit job
 * Authentication
 * UI improvements
+
+## 🌐 Live Demo
+
+https://your-vercel-url.vercel.app
+
+## ✨ Features
+
+* Add, delete job applications
+* Filter by status
+* Search functionality
+* Persistent data using MongoDB
+
+## ⚙️ Tech Stack
+
+* React (Vite)
+* Node.js + Express
+* MongoDB Atlas
+* Render (backend)
+* Vercel (frontend)
