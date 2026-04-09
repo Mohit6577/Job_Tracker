@@ -1,10 +1,13 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
-const jobRoutes = require('./routes/jobRoutes');
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import jobRoutes from './routes/jobRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import errorHandler from './middleware/errorMiddleware.js';
 
 const app = express();
+dotenv.config();
 
 app.use(cors());
 app.use(express.json());
@@ -19,9 +22,11 @@ mongoose
 
 const PORT = process.env.PORT || 5000;
 
+//Routes
+app.use('/api/jobs', jobRoutes);
+app.use('/api/auth', authRoutes);
+app.use(errorHandler);
+
 app.listen(PORT, () => {
   console.log(`Server is runing on port${PORT}`);
 });
-
-//Routes
-app.use('/api/jobs', jobRoutes);

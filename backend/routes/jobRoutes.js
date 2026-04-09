@@ -1,20 +1,29 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const Job = require('../models/Job');
-//CREATE JOB
-router.post('/', async (req, res) => {
-  try {
-    const queryObj = {};
+import Job from '../models/Job.js';
+import protect from '../middleware/authMiddleware.js';
 
-    const job = new Job(req.body);
+//CREATE JOB
+router.post('/', protect, async (req, res, next) => {
+  try {
+    const { companyName, role } = req.body;
+
+    if (!companyName || !role) {
+      res.status(400);
+      throw new Error('Company and role required');
+    }
+    const job = new Job({
+      ...req.body,
+      user: req.user.id,
+    });
     const savedJob = await job.save();
     res.status(201).json(savedJob);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 //GET ALL JOBS
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res, next) => {
   try {
     const queryObj = {};
     //FILTER
@@ -34,13 +43,13 @@ router.get('/', async (req, res) => {
     const skip = (page - 1) * limit;
 
     //QUERY EXECUTION
-    const jobs = await Job.find(queryObj)
+    const jobs = await Job.find({ ...queryObj, user: req.user.id })
       .sort({ dateApplied: -1 })
       .skip(skip)
       .limit(limit);
 
     //TOTAL COUNT
-    const total = await Job.countDocuments(queryObj);
+    const total = await Job.countDocuments({ ...queryObj, user: req.user.id });
 
     res.json({
       total,
@@ -49,30 +58,52 @@ router.get('/', async (req, res) => {
       jobs,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 //DELETE JOBS
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, async (req, res, next) => {
   try {
-    await Job.findByIdAndDelete(req.params.id);
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      res.status(404);
+      throw new Error('Job not found');
+    }
+    //Check ownership
+    if (job.user.toString() !== req.user.id) {
+      res.status(401);
+      throw new Error('Not authorized');
+    }
+    await job.deleteOne();
     res.json({ message: 'Job deleted' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 //UPDATE JOBS
-router.put('/:id', async (req, res) => {
+router.put('/:id', protect, async (req, res, next) => {
   try {
-    const updatedJob = await Job.findByIdAndUpdate(req.params.id, req.body, {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      res.status(404);
+      throw new Error('Job not found');
+    }
+
+    // 🔐 Ownership check
+    if (job.user.toString() !== req.user.id) {
+      res.status(401);
+      throw new Error('Not authorized');
+    }
+    const updatedJob = await Job.findById(req.params.id, req.body, {
       new: true,
     });
     res.json(updatedJob);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
-module.exports = router;
+export default router;
