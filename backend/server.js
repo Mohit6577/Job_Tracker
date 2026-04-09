@@ -25,8 +25,9 @@ const PORT = process.env.PORT || 5000;
 //Routes
 app.use('/api/jobs', jobRoutes);
 app.use('/api/auth', authRoutes);
-app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is runing on port${PORT}`);
 });
+
+app.use(errorHandler);

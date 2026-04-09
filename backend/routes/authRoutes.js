@@ -10,29 +10,37 @@ router.post('/register', async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    const normalizedEmail = email.toLowerCase();
-
     if (!name || !email || !password) {
       res.status(400);
       throw new Error('All fields are required');
     }
 
+    const normalizedEmail = email.toLowerCase();
+
+    //PASSWORD VALIDATION
+    if (password.length < 6) {
+      res.status(400);
+      throw new Error('Password must be atleast 6 characters');
+    }
+
+    //CHECK EXISTING USER
     const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
       res.status(400);
       throw new Error('User already exists');
     }
-
+    //HASH PASSWORD
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    //CREATE USER
     const user = await User.create({
       name,
       email: normalizedEmail,
       password: hashedPassword,
     });
 
-    res.json({
+    res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -43,16 +51,21 @@ router.post('/register', async (req, res, next) => {
 });
 
 //LOGIN
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
   try {
+    console.log('REQ BODY', req.body);
     const { email, password } = req.body;
+    console.log('EMAIL', email);
+    console.log('PASSWORD', password);
 
     if (!email || !password) {
       res.status(400);
       throw new Error('All fields are required');
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase();
+
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       res.status(400);
@@ -70,7 +83,14 @@ router.post('/login', async (req, res) => {
       expiresIn: '7d',
     });
 
-    res.json({ token });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (err) {
     next(err);
   }
